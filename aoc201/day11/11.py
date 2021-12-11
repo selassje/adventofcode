@@ -4,19 +4,11 @@ for line in f.readlines():
     line = line.strip()
     octopus_map.append(list(map(int, line)))
 
-
-def print_map(octopus_map):
-    for row in octopus_map:
-        line = ""
-        for energy in row:
-            line += str(energy)
-        print(line)
-    print()
+h = len(octopus_map)
+w = len(octopus_map[0])
 
 
-def flash(octopus_map, flash_map):
-    h = len(octopus_map)
-    w = len(octopus_map[0])
+def flash(flash_map):
     for (y, row) in enumerate(octopus_map):
         for (x, energy) in enumerate(row):
             if energy > 9 and not flash_map[y][x]:
@@ -39,7 +31,7 @@ def flash(octopus_map, flash_map):
                 flash_map[y][x] = True
 
 
-def count_flashes(octopus_map):
+def count_flashes():
     result = 0
     for row in octopus_map:
         for energy in row:
@@ -48,17 +40,13 @@ def count_flashes(octopus_map):
     return result
 
 
-def increase_energy(octopus_map):
-    h = len(octopus_map)
-    w = len(octopus_map[0])
+def increase_energy():
     for y in range(h):
         for x in range(w):
             octopus_map[y][x] += 1
 
 
-def clear_flashes(octopus_map):
-    h = len(octopus_map)
-    w = len(octopus_map[0])
+def clear_flashes():
     for y in range(h):
         for x in range(w):
             if octopus_map[y][x] > 9:
@@ -66,18 +54,26 @@ def clear_flashes(octopus_map):
 
 
 total_flashes = 0
-for _ in range(100):
-    increase_energy(octopus_map)
-    flashes = count_flashes(octopus_map)
-    flash_map = [
-        [False for _ in range(len(octopus_map[0]))] for _ in range(len(octopus_map))
-    ]
+step = 1
+first_all_flashing_step = 0
+first_all_flashing_step_reached = False
+while step < 100 or not first_all_flashing_step_reached:
+    increase_energy()
+    flashes = count_flashes()
+    flash_map = [[False for _ in range(w)] for _ in range(h)]
     while True:
-        flash(octopus_map, flash_map)
-        new_flashes = count_flashes(octopus_map)
+        flash(flash_map)
+        new_flashes = count_flashes()
         if new_flashes == flashes:
             break
         flashes = new_flashes
-    total_flashes += flashes
-    clear_flashes(octopus_map)
+    if flashes == w * h and not first_all_flashing_step_reached:
+        first_all_flashing_step = step
+        first_all_flashing_step_reached = True
+    if step <= 100:
+        total_flashes += flashes
+    clear_flashes()
+    step += 1
+
 print(total_flashes)
+print(first_all_flashing_step)
