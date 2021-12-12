@@ -17,17 +17,62 @@ for line in f.readlines():
     caves.add(cave_1)
     caves.add(cave_2)
 
-cave_visit_map = {k: False for k in caves}
+cave_visit_map = {k: 1 for k in caves}
+cave_visit_map_2 = {k: 2 for k in caves}
+cave_visit_map_2["start"] = 1
+cave_visit_map_2["end"] = 1
 
-def find_paths(cave, cave_visit_map):
+
+def find_paths(cave, cave_visit_map, path):
     if cave.islower():
-        cave_visit_map[cave] = True
+        cave_visit_map[cave] -= 1
+    path = path + "," + cave
     if cave == "end":
+        print(path)
         return 1
     result = 0
     for n in cavern_map[cave]:
-        if not cave_visit_map[n]:
-            result += find_paths(n, copy.deepcopy(cave_visit_map))
+        if cave_visit_map[n] > 0:
+            result += find_paths(n, copy.deepcopy(cave_visit_map), path)
     return result
 
-print(find_paths("start", cave_visit_map))
+
+def find_paths_2(cave, cave_visit_map, path, small_single_picked):
+    if cave.islower():
+        if cave_visit_map[cave] > 0:
+            cave_visit_map[cave] -= 1
+        elif cave not in ["start", "end"]:
+            small_single_picked = True
+    path = path + "," + cave
+    if cave == "end":
+        #  print(path)
+        return 1
+    result = 0
+    for n in cavern_map[cave]:
+        if cave_visit_map[n] > 0:
+            result += find_paths_2(
+                n,
+                copy.deepcopy(cave_visit_map),
+                path,
+                copy.deepcopy(small_single_picked),
+            )
+        elif not small_single_picked and n.islower() and n not in ["start", "end"]:
+            result += find_paths_2(
+                n,
+                copy.deepcopy(cave_visit_map),
+                path,
+                copy.deepcopy(small_single_picked),
+            )
+    return result
+
+
+def solution_1():
+    return find_paths("start", copy.deepcopy(cave_visit_map), "")
+
+
+def solution_2():
+    return find_paths_2("start", cave_visit_map, "", False)
+
+
+# print(solution_1())
+print(solution_2())
