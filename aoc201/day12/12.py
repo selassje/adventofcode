@@ -1,6 +1,8 @@
+import copy
+
 cavern_map = {}
 caves = set()
-f = open("example.txt")
+f = open("input.txt")
 for line in f.readlines():
     splitted = line.split("-")
     cave_1 = splitted[0]
@@ -15,11 +17,7 @@ for line in f.readlines():
     caves.add(cave_1)
     caves.add(cave_2)
 
-print(cavern_map)
-print(caves)
-
 cave_visit_map = {k: False for k in caves}
-
 
 def find_paths(cave, cave_visit_map):
     if cave.islower():
@@ -29,8 +27,7 @@ def find_paths(cave, cave_visit_map):
     result = 0
     for n in cavern_map[cave]:
         if not cave_visit_map[n]:
-            result += find_paths(n, cave_visit_map)
+            result += find_paths(n, copy.deepcopy(cave_visit_map))
     return result
-
 
 print(find_paths("start", cave_visit_map))
