@@ -37,14 +37,12 @@ def fold_left(x):
 def fold_up(y):
     global h
     global w
-    folded_count = h - y - 1
-    assert y == int(h / 2)
-    for y2 in range(folded_count):
+    for y2 in range(y):
         for x in range(w):
             pattern[y - y2 - 1][x] = pattern[y - y2 - 1][x] or pattern[y + y2 + 1][x]
-    for _ in range(folded_count + 1):
+    for _ in range(y + 1):
         pattern.pop()
-    h -= folded_count + 1
+    h -= y + 1
 
 
 class Command(Enum):
