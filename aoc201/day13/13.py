@@ -27,10 +27,10 @@ def fold_left(x):
     global w
     for x2 in range(x):
         for y in range(h):
-            pattern[y][x + x2 + 1] = pattern[y][x + x2 + 1] or pattern[y][x - x2 - 1]
+            pattern[y][x - x2 - 1] = pattern[y][x - x2 - 1] or pattern[y][x + x2 + 1]
     for _ in range(x + 1):
         for y in range(h):
-            pattern[y].pop(0)
+            pattern[y].pop()
     w -= x + 1
 
 
