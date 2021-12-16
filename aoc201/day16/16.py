@@ -1,5 +1,42 @@
 class Packet:
-    pass
+    def evaluate(self):
+        if self.type == 0:
+            sum = 0
+            for s in self.subpackets:
+                sum += s.evaluate()
+            return sum
+        if self.type == 1:
+            product = 1
+            for s in self.subpackets:
+                product *= s.evaluate()
+            return product
+        if self.type == 2:
+            result = self.subpackets[0].evaluate()
+            for s in self.subpackets:
+                result = min(result, s.evaluate())
+            return result
+        if self.type == 3:
+            result = self.subpackets[0].evaluate()
+            for s in self.subpackets:
+                result = max(result, s.evaluate())
+            return result
+        if self.type == 4:
+            return self.value
+        if self.type == 5:
+            if self.subpackets[0].evaluate() > self.subpackets[1].evaluate():
+                return 1
+            else:
+                return 0
+        if self.type == 6:
+            if self.subpackets[0].evaluate() < self.subpackets[1].evaluate():
+                return 1
+            else:
+                return 0
+        if self.type == 7:
+            if self.subpackets[0].evaluate() == self.subpackets[1].evaluate():
+                return 1
+            else:
+                return 0
 
 
 input_raw = open("input.txt").readline()
@@ -31,7 +68,6 @@ def parse_literal_value(packet, start):
 def parse_raw_packet_internal(packet_raw, start):
     packet = Packet()
     packet.version = read_bits(packet_raw, start, 3)
-    #  print("version", packet.version)
     packet.type = read_bits(packet_raw, start + 3, 3)
     bit_length = 6
     packet.subpackets = []
@@ -45,7 +81,6 @@ def parse_raw_packet_internal(packet_raw, start):
             packet.subpackets_bitlength = read_bits(packet_raw, start + 7, 15)
             bit_length += 15
             remaining_subpackets_bitlength = packet.subpackets_bitlength
-            #  print("remaining_subpackets_bit", remaining_subpackets_bitlength)
             while remaining_subpackets_bitlength > 0:
                 (subpacket_bitlength, subpacket) = parse_raw_packet_internal(
                     packet_raw, start + bit_length
@@ -58,7 +93,6 @@ def parse_raw_packet_internal(packet_raw, start):
             packet.subpackets_count = read_bits(packet_raw, start + 7, 11)
             bit_length += 11
             remaining_subpackets = packet.subpackets_count
-            # print("remaining_subpackets", remaining_subpackets)
             while remaining_subpackets > 0:
                 (subpacket_bitlength, subpacket) = parse_raw_packet_internal(
                     packet_raw, start + bit_length
@@ -87,10 +121,25 @@ def solve_1(packet_raw_hex):
     return sum_all_packets_versions(packet)
 
 
+def solve_2(packet_raw_hex):
+    packet_raw_bit = hex_to_bit_string(packet_raw_hex)
+    packet = parse_raw_packet(packet_raw_bit)
+    return packet.evaluate()
+
+
 assert solve_1("D2FE28") == 6
 assert solve_1("8A004A801A8002F478") == 16
 assert solve_1("620080001611562C8802118E34") == 12
 assert solve_1("C0015000016115A2E0802F182340") == 23
 assert solve_1("A0016C880162017C3686B18A3D4780") == 31
 
-print(solve_1(input_raw))
+assert solve_2("C200B40A82") == 3
+assert solve_2("04005AC33890") == 54
+assert solve_2("880086C3E88112") == 7
+assert solve_2("CE00C43D881120") == 9
+assert solve_2("D8005AC2A8F0") == 1
+assert solve_2("F600BC2D8F") == 0
+assert solve_2("9C005AC2F8F0") == 0
+assert solve_2("9C0141080250320F1802104A08") == 1
+
+print(solve_1(input_raw), solve_2(input_raw))
