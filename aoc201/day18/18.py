@@ -30,11 +30,11 @@ class SnailFishNumber(object):
         self.__right = None
         self.__parent = None
 
-    def get_value(self):
+    def get_magnitude(self):
         if self.__left is None and self.__right == None:
             assert self.__value is not None
             return self.__value
-        return None
+        return 3 * self.__left.get_magnitude() + 2 * self.__right.get_magnitude()
 
     def __str__(self) -> str:
         if self.__value is not None:
@@ -63,9 +63,9 @@ class SnailFishNumber(object):
                 self.__right.__add_to_next(v, left)
 
     def __explode(self, depth):
-        if depth == 4 and self.get_value() is None:
-            l = self.__left.get_value()
-            r = self.__right.get_value()
+        if depth == 4 and self.__value is None:
+            l = self.__left.__value
+            r = self.__right.__value
             if l is not None and r is not None:
                 self.__left = None
                 self.__right = None
@@ -80,20 +80,40 @@ class SnailFishNumber(object):
             result = self.__right.__explode(depth + 1)
         return result
 
+    def split(self):
+        if self.__value is not None and self.__value >= 10:
+            l = int(self.__value / 2)
+            if self.__value % 2 == 0:
+                r = l
+            else:
+                r = l + 1
+            self.__value = None
+            self.__left = SnailFishNumber.create_single(l)
+            self.__right = SnailFishNumber.create_single(r)
+            self.__left.__parent = self
+            self.__right.__parent = self
+            return True
+
+        result = False
+        if self.__left is not None:
+            result = self.__left.split()
+        if not result and self.__right is not None:
+            result = self.__right.split()
+        return result
+
     def explode(self):
         return self.__explode(0)
-
-
-def split(number):
-    return False
 
 
 def add(number_1, number_2):
     added = SnailFishNumber.create_pair(number_1, number_2)
     while True:
+        # print(added)
         if added.explode():
+            #   print("after explode")
             continue
-        if split(added):
+        if added.split():
+            #  print("after split")
             continue
         break
     return added
@@ -129,7 +149,14 @@ def test_explode(number_str, expected_str):
     assert not was_exploded == (number_str == expected_str)
 
 
-f = open("example.txt")
+def test_add(number1_str, number2_str, expected_str):
+    number1 = parse(number1_str)
+    number2 = parse(number2_str)
+    added = add(number1, number2)
+    assert expected_str == str(added)
+
+
+f = open("input.txt")
 numbers = []
 for line in f.readlines():
     line = line.strip()
@@ -145,6 +172,15 @@ test_explode(
 )
 test_explode("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]", "[[3,[2,[8,0]]],[9,[5,[7,0]]]]")
 
+test_add("[[[[4,3],4],4],[7,[[8,4],9]]]", "[1,1]", "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]")
+test_add(
+    "[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]",
+    "[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]",
+    "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]",
+)
+
 sum = numbers[0]
 for number in numbers[1:]:
     sum = add(sum, number)
+
+print(sum.get_magnitude())
