@@ -24,6 +24,13 @@ def sum_position(position_1, position_2):
     return [position_1[i] + position_2[i] for i in range(3)]
 
 
+def manhattan_distance(p1, p2):
+    result = 0
+    for i in range(3):
+        result += abs(p1[i] - p2[i])
+    return result
+
+
 def deduct_position(position_1, position_2):
     return [position_1[i] - position_2[i] for i in range(3)]
 
@@ -44,12 +51,6 @@ class Scanner:
                 return True
         return False
 
-    def rotate_and_shift(self, rotation, center):
-        beacons = self.get_reoriented_beacons(rotation)
-        for i in range(len(beacons)):
-            beacons[i] = sum_position(center, beacons[i])
-        self.reports = beacons
-
     def rotate(self, rotation):
         beacons = self.get_reoriented_beacons(rotation)
         self.reports = beacons
@@ -57,11 +58,7 @@ class Scanner:
     def get_reoriented_beacons(self, rotation):
         beacons = []
         for r in self.reports:
-            beacon = [0 for _ in range(3)]
             x = list(sequence((r[0], r[1], r[2])))[rotation]
-            # for i in range(3):
-            #     #beacon[i] = r[i] * rotations[rotation][i]
-            #     beacon[i] = sequence(())[rotation][i]
             beacons.append(x)
         return beacons
 
@@ -81,9 +78,6 @@ for line in f.readlines():
 scanners.pop(0)
 scanners.append(Scanner(reports))
 
-# for s in scanners:
-#     print(s)
-
 
 def find_scanner_location(scanner_1, scanner_2, log):
     for rot in range(len(rotations)):
@@ -92,15 +86,11 @@ def find_scanner_location(scanner_1, scanner_2, log):
             for beacon_1 in beacons:
                 common_beacons = 0
                 scanner_location = [beacon_0[i] - beacon_1[i] for i in range(3)]
-                if scanner_location[0] == -88:
-                    # print(scanner_location)
-                    pass
                 for _beacon_1 in beacons:
                     beacon_relative = sum_position(scanner_location, _beacon_1)
                     if scanner_1.find(beacon_relative):
                         common_beacons += 1
                 if common_beacons >= 12:
-                    print("rotation", rot)
                     scanner_2.rotate(rot)
                     return scanner_location
     return None
@@ -116,7 +106,6 @@ while len(scanners_locations) != len(scanners):
                     scanners[k], scanners[i], False
                 )
                 if scanner_location is not None:
-                    print("lol")
                     scanners_locations[i] = sum_position(v, scanner_location)
                     break
 
@@ -125,5 +114,14 @@ for i, s in enumerate(scanners):
     for r in s.reports:
         unique_beacons.add(tuple(sum_position(scanners_locations[i], r)))
 
-print(unique_beacons)
 print(len(unique_beacons))
+
+max_dist_between_scanners = 0
+
+for k1, v1 in scanners_locations.items():
+    for k2, v2 in scanners_locations.items():
+        max_dist_between_scanners = max(
+            max_dist_between_scanners, manhattan_distance(v1, v2)
+        )
+
+print(max_dist_between_scanners)
