@@ -66,7 +66,7 @@ class Scanner:
         return beacons
 
 
-f = open("example.txt")
+f = open("input.txt")
 
 scanners = []
 reports = []
@@ -119,3 +119,11 @@ while len(scanners_locations) != len(scanners):
                     print("lol")
                     scanners_locations[i] = sum_position(v, scanner_location)
                     break
+
+unique_beacons = set()
+for i, s in enumerate(scanners):
+    for r in s.reports:
+        unique_beacons.add(tuple(sum_position(scanners_locations[i], r)))
+
+print(unique_beacons)
+print(len(unique_beacons))
