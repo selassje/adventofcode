@@ -1,6 +1,105 @@
 import re
 
-from click import group
+from copy import deepcopy
+
+
+def get_overlapp_1d(range_1, range_2):
+    s1, e1 = range_1
+    s2, e2 = range_2
+
+    assert s1 <= e1
+    assert s2 <= e2
+
+    if e1 < s2 or e1 < s1:
+        return None
+
+    if e1 in range(s2, e2 + 1):
+        return (s2, e1)
+    assert e2 in range(s1, e1 + 1)
+    return (s1, e2)
+
+
+class Cuboid:
+    def __init__(self, top_left, bottom_right) -> None:
+        self.top_left = top_left
+        self.bottom_right = bottom_right
+
+    def get_size_x(self):
+        return self.bottom_right[0] - self.top_left[0]
+
+    def get_size_y(self):
+        return self.top_left[1] - self.bottom_right[1]
+
+    def get_size_z(self):
+        return self.top_left[2] - self.bottom_right[2]
+
+    def get_volume(self):
+        if (
+            self.top_left[0] > self.bottom_right[0]
+            or self.top_left[1] > self.bottom_right[1]
+            or self.top_left[2] < self.bottom_right[2]
+        ):
+            return 0
+
+        return self.get_size_x() * self.get_size_y() * self.get_size_z()
+
+
+def cut_out_sub_cuboid(target, sub_cuboid):
+    remaining = []
+
+    def add_if_not_empty(x):
+        if x.get_volume() != 0:
+            remaining.append(x)
+            return True
+
+    above = Cuboid(
+        target.top_left,
+        (target.bottom_right[0], target.bottom_right[1], sub_cuboid.top_left[2]),
+    )
+
+    below = Cuboid(
+        (target.top_left[0], target.top_left[1], sub_cuboid.bottom_right[2]),
+        target.bottom_right,
+    )
+
+    top = sub_cuboid.top_left[2]
+    bottom = sub_cuboid.bottom_right[2]
+
+    remaining_beside_top_left = [target.top_left[0], target.top_left[1], top]
+    remaining_beside_bottom_right = [
+        target.bottom_right[0],
+        target.bottom_right[1],
+        bottom,
+    ]
+    beside = Cuboid(
+        (
+            sub_cuboid.bottom_right[0],
+            sub_cuboid.bottom_right[1],
+            sub_cuboid.top_left[2],
+        ),
+        (target.bottom_right[0], target.bottom_right[1], sub_cuboid.bottom_right[2]),
+    )
+    if add_if_not_empty(beside):
+        remaining_beside_bottom_right[1] = sub_cuboid.top_left[1]
+    beside = Cuboid(
+        (
+            target.top_left[0],
+            sub_cuboid.top_lef[1],
+            sub_cuboid.top_left[2],
+        ),
+        (
+            sub_cuboid.top_left[0],
+            sub_cuboid.top_left[1],
+            sub_cuboid.bottom_right[2],
+        ),
+    )
+    if add_if_not_empty(beside):
+        remaining_beside_bottom_right[1] = sub_cuboid.top_left[1]
+    
+    add_if_not_empty(above)
+    add_if_not_empty(below)
+    add_if_not_empty(Cuboid(remaining_beside_top_left,remaining_beside_bottom_right))
+    return remaining
 
 
 class Command:
