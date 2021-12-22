@@ -10,7 +10,7 @@ def get_overlapp_1d(range_1, range_2):
     assert s1 <= e1
     assert s2 <= e2
 
-    if e1 < s2 or e1 < s1:
+    if e1 < s2 or e2 < s1:
         return None
 
     if e1 in range(s2, e2 + 1):
@@ -23,6 +23,7 @@ class Cuboid:
     def __init__(self, top_left, bottom_right) -> None:
         self.top_left = top_left
         self.bottom_right = bottom_right
+        self.on = False
 
     def get_size_x(self):
         return self.bottom_right[0] - self.top_left[0]
@@ -36,12 +37,40 @@ class Cuboid:
     def get_volume(self):
         if (
             self.top_left[0] > self.bottom_right[0]
-            or self.top_left[1] > self.bottom_right[1]
+            or self.top_left[1] < self.bottom_right[1]
             or self.top_left[2] < self.bottom_right[2]
         ):
             return 0
 
         return self.get_size_x() * self.get_size_y() * self.get_size_z()
+
+    def __eq__(self, __o: object) -> bool:
+        for i in range(3):
+            if self.top_left[i] != __o.top_left[i]:
+                return False
+        for i in range(3):
+            if self.bottom_right[i] != __o.bottom_right[i]:
+                return False
+        return True
+
+
+def find_overlapp(c1, c2):
+    x_range_1 = (c1.top_left[0], c1.bottom_right[0])
+    y_range_1 = (c1.bottom_right[1], c1.top_left[1])
+    z_range_1 = (c1.bottom_right[2], c1.top_left[2])
+    x_range_2 = (c2.top_left[0], c2.bottom_right[0])
+    y_range_2 = (c2.bottom_right[1], c2.top_left[1])
+    z_range_2 = (c2.bottom_right[2], c2.top_left[2])
+
+    x_overlapp = get_overlapp_1d(x_range_1, x_range_2)
+    y_overlapp = get_overlapp_1d(y_range_1, y_range_2)
+    z_overlapp = get_overlapp_1d(z_range_1, z_range_2)
+
+    if x_overlapp is not None and y_overlapp is not None and z_overlapp is not None:
+        top_left = (x_overlapp[0], y_overlapp[1], z_overlapp[1])
+        bottom_right = (x_overlapp[1], y_overlapp[0], z_overlapp[0])
+        return Cuboid(top_left, bottom_right)
+    return None
 
 
 def cut_out_sub_cuboid(target, sub_cuboid):
@@ -75,30 +104,106 @@ def cut_out_sub_cuboid(target, sub_cuboid):
         (
             sub_cuboid.bottom_right[0],
             sub_cuboid.bottom_right[1],
-            sub_cuboid.top_left[2],
+            top,
         ),
-        (target.bottom_right[0], target.bottom_right[1], sub_cuboid.bottom_right[2]),
+        (target.bottom_right[0], target.bottom_right[1], bottom),
     )
     if add_if_not_empty(beside):
         remaining_beside_bottom_right[1] = sub_cuboid.top_left[1]
     beside = Cuboid(
         (
             target.top_left[0],
-            sub_cuboid.top_lef[1],
-            sub_cuboid.top_left[2],
+            sub_cuboid.top_left[1],
+            top,
         ),
         (
             sub_cuboid.top_left[0],
             sub_cuboid.top_left[1],
-            sub_cuboid.bottom_right[2],
+            bottom,
         ),
     )
     if add_if_not_empty(beside):
         remaining_beside_bottom_right[1] = sub_cuboid.top_left[1]
-    
+
+    beside = Cuboid(
+        (
+            target.top_left[0],
+            target.top_left[1],
+            top,
+        ),
+        (sub_cuboid.top_left[0], sub_cuboid.bottom_right[1], bottom),
+    )
+    if add_if_not_empty(beside):
+        remaining_beside_top_left[1] = sub_cuboid.bottom_right[1]
+    beside = Cuboid(
+        (
+            sub_cuboid.bottom_right[0],
+            target.top_left[1],
+            top,
+        ),
+        (
+            target.bottom_right[0],
+            sub_cuboid.bottom_right[1],
+            bottom,
+        ),
+    )
+    if add_if_not_empty(beside):
+        remaining_beside_top_left[1] = sub_cuboid.bottom_right[1]
+    beside = Cuboid(
+        (
+            target.top_left[0],
+            target.top_left[1],
+            top,
+        ),
+        (sub_cuboid.bottom_right[0], sub_cuboid.top_left[1], bottom),
+    )
+    if add_if_not_empty(beside):
+        remaining_beside_top_left[0] = sub_cuboid.bottom_right[0]
+    beside = Cuboid(
+        (
+            target.top_left[0],
+            sub_cuboid.bottom_right[1],
+            top,
+        ),
+        (
+            sub_cuboid.bottom_right[0],
+            target.bottom_right[1],
+            bottom,
+        ),
+    )
+    if add_if_not_empty(beside):
+        remaining_beside_top_left[0] = sub_cuboid.bottom_right[0]
+
+    beside = Cuboid(
+        (
+            sub_cuboid.top_left[0],
+            target.top_left[1],
+            top,
+        ),
+        (target.bottom_right[0], sub_cuboid.top_left[1], bottom),
+    )
+    if add_if_not_empty(beside):
+        remaining_beside_bottom_right[0] = sub_cuboid.top_left[0]
+    beside = Cuboid(
+        (
+            sub_cuboid.top_left[0],
+            sub_cuboid.bottom_right[1],
+            top,
+        ),
+        (
+            target.bottom_right[0],
+            target.bottom_right[1],
+            bottom,
+        ),
+    )
+    if add_if_not_empty(beside):
+        remaining_beside_bottom_right[0] = sub_cuboid.top_left[0]
     add_if_not_empty(above)
     add_if_not_empty(below)
-    add_if_not_empty(Cuboid(remaining_beside_top_left,remaining_beside_bottom_right))
+    add_if_not_empty(Cuboid(remaining_beside_top_left, remaining_beside_bottom_right))
+
+    for r in remaining:
+        r.on = target.on
     return remaining
 
 
@@ -156,10 +261,38 @@ for line in f.readlines():
     commands.append(Command(enabled, x, y, z))
 
 
-grid = [[[False for _ in range(101)] for _ in range(101)] for _ in range(101)]
+def solve(x_range, y_range, z_range):
+    top_left = (x_range[0], y_range[1], z_range[1])
+    bottom_right = (x_range[1], y_range[0], z_range[0])
 
-for c in commands:
-    apply_command(grid, c)
+    cuboids = [Cuboid(top_left, bottom_right)]
+
+    for com in commands:
+        incoming_cuboid = Cuboid(
+            (com.x[0], com.y[1], com.z[1]), (com.x[1], com.y[0], com.z[0])
+        )
+        cuboids_to_add = []
+        cuboids_to_remove = []
+        for cub in cuboids:
+            overlapp = find_overlapp(cub, incoming_cuboid)
+            if overlapp is not None:
+                if overlapp == cub:
+                    cub.on = com.on
+                elif com.on != cub.on:
+                    overlapp.on = com.on
+                    cuboids_to_add.append(overlapp)
+                    remaining = cut_out_sub_cuboid(cub, overlapp)
+                    cuboids_to_add += remaining
+                    cuboids_to_remove.append(cub)
+        for r in cuboids_to_remove:
+            cuboids.remove(r)
+        cuboids += cuboids_to_add
+
+    result = 0
+    for cub in cuboids:
+        if cub.on:
+            result += cub.get_volume()
+    return result
 
 
-print(count_enabled(grid))
+print(solve((-50, 50), (-50, 50), (-50, 50)))
