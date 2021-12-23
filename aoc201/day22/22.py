@@ -231,7 +231,6 @@ def solve(input_file):
                         cuboids_to_remove.append(cub)
             for r in cuboids_to_remove:
                 cuboids.remove(r)
-            cuboids -= cuboids_to_remove
             cuboids += cuboids_to_add
         result = 0
         for cub in cuboids:
