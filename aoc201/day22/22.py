@@ -1,6 +1,6 @@
 import re
 
-from copy import deepcopy
+import sys
 
 
 def get_overlapp_1d(range_1, range_2):
@@ -12,6 +12,12 @@ def get_overlapp_1d(range_1, range_2):
 
     if e1 < s2 or e2 < s1:
         return None
+
+    if s1 in range(s2, e2 + 1) and e1 in range(s2, e2 + 1):
+        return (s1, e1)
+
+    if s2 in range(s1, e1 + 1) and e2 in range(s1, e1 + 1):
+        return (s2, e2)
 
     if e1 in range(s2, e2 + 1):
         return (s2, e1)
@@ -26,13 +32,13 @@ class Cuboid:
         self.on = False
 
     def get_size_x(self):
-        return self.bottom_right[0] - self.top_left[0]
+        return self.bottom_right[0] - self.top_left[0] + 1
 
     def get_size_y(self):
-        return self.top_left[1] - self.bottom_right[1]
+        return self.top_left[1] - self.bottom_right[1] + 1
 
     def get_size_z(self):
-        return self.top_left[2] - self.bottom_right[2]
+        return self.top_left[2] - self.bottom_right[2] + 1
 
     def get_volume(self):
         if (
@@ -52,6 +58,17 @@ class Cuboid:
             if self.bottom_right[i] != __o.bottom_right[i]:
                 return False
         return True
+
+    def __str__(self) -> str:
+        _str = "on " if self.on else "off "
+        _str += (
+            str(self.top_left)
+            + " "
+            + str(self.bottom_right)
+            + " V:"
+            + str(self.get_volume())
+        )
+        return _str
 
 
 def find_overlapp(c1, c2):
@@ -83,17 +100,72 @@ def cut_out_sub_cuboid(target, sub_cuboid):
 
     above = Cuboid(
         target.top_left,
-        (target.bottom_right[0], target.bottom_right[1], sub_cuboid.top_left[2]),
+        (target.bottom_right[0], target.bottom_right[1], sub_cuboid.top_left[2] + 1),
     )
 
     below = Cuboid(
-        (target.top_left[0], target.top_left[1], sub_cuboid.bottom_right[2]),
+        (target.top_left[0], target.top_left[1], sub_cuboid.bottom_right[2] - 1),
         target.bottom_right,
     )
 
+    add_if_not_empty(above)
+    add_if_not_empty(below)
     top = sub_cuboid.top_left[2]
     bottom = sub_cuboid.bottom_right[2]
 
+    if (
+        target.top_left[0] <= sub_cuboid.top_left[0]
+        and target.top_left[1] >= sub_cuboid.top_left[1]
+        and target.top_left[2] >= sub_cuboid.top_left[2]
+        and target.bottom_right[0] >= sub_cuboid.bottom_right[0]
+        and target.bottom_right[1] <= sub_cuboid.bottom_right[1]
+        and target.bottom_right[2] <= sub_cuboid.bottom_right[2]
+    ):
+        beside_left = Cuboid(
+            (
+                target.top_left[0],
+                target.top_left[1],
+                top,
+            ),
+            (sub_cuboid.top_left[0] - 1, target.bottom_right[1], bottom),
+        )
+        add_if_not_empty(beside_left)
+        beside_right = Cuboid(
+            (
+                sub_cuboid.bottom_right[0] + 1,
+                target.top_left[1],
+                top,
+            ),
+            (target.bottom_right[0], target.bottom_right[1], bottom),
+        )
+        add_if_not_empty(beside_right)
+
+        beside_down = Cuboid(
+            (
+                sub_cuboid.top_left[0],
+                sub_cuboid.bottom_right[1] - 1,
+                top,
+            ),
+            (
+                sub_cuboid.bottom_right[0],
+                target.bottom_right[1],
+                bottom,
+            ),
+        )
+        add_if_not_empty(beside_down)
+
+        beside_up = Cuboid(
+            (
+                sub_cuboid.top_left[0],
+                target.top_left[1],
+                top,
+            ),
+            (sub_cuboid.bottom_right[0], sub_cuboid.top_left[1] + 1, bottom),
+        )
+        add_if_not_empty(beside_up)
+        for r in remaining:
+            r.on = target.on
+        return remaining
     remaining_beside_top_left = [target.top_left[0], target.top_left[1], top]
     remaining_beside_bottom_right = [
         target.bottom_right[0],
@@ -198,8 +270,6 @@ def cut_out_sub_cuboid(target, sub_cuboid):
     )
     if add_if_not_empty(beside):
         remaining_beside_bottom_right[0] = sub_cuboid.top_left[0]
-    add_if_not_empty(above)
-    add_if_not_empty(below)
     add_if_not_empty(Cuboid(remaining_beside_top_left, remaining_beside_bottom_right))
 
     for r in remaining:
@@ -247,6 +317,13 @@ def apply_command(grid, command):
     return result
 
 
+min_x = sys.maxsize
+min_y = sys.maxsize
+min_z = sys.maxsize
+max_x = -sys.maxsize
+max_y = -sys.maxsize
+max_z = -sys.maxsize
+
 commands = []
 f = open("input.txt")
 for line in f.readlines():
@@ -258,6 +335,12 @@ for line in f.readlines():
     x = (int(match.group(1)), int(match.group(2)))
     y = (int(match.group(3)), int(match.group(4)))
     z = (int(match.group(5)), int(match.group(6)))
+    min_x = min(min_x, x[0])
+    min_y = min(min_y, y[0])
+    min_z = min(min_z, z[0])
+    max_x = max(max_x, x[1])
+    max_y = max(max_y, y[1])
+    max_z = max(max_z, z[1])
     commands.append(Command(enabled, x, y, z))
 
 
@@ -266,15 +349,17 @@ def solve(x_range, y_range, z_range):
     bottom_right = (x_range[1], y_range[0], z_range[0])
 
     cuboids = [Cuboid(top_left, bottom_right)]
-
+    total_volume = cuboids[0].get_volume()
     for com in commands:
         incoming_cuboid = Cuboid(
             (com.x[0], com.y[1], com.z[1]), (com.x[1], com.y[0], com.z[0])
         )
+        #   print("incoming " + str(incoming_cuboid))
         cuboids_to_add = []
         cuboids_to_remove = []
         for cub in cuboids:
             overlapp = find_overlapp(cub, incoming_cuboid)
+            # print("overlapp " + str(overlapp))
             if overlapp is not None:
                 if overlapp == cub:
                     cub.on = com.on
@@ -288,6 +373,15 @@ def solve(x_range, y_range, z_range):
             cuboids.remove(r)
         cuboids += cuboids_to_add
 
+        volume = 0
+        # for c in cuboids:
+        #     volume += c.get_volume()
+        #     print(c)
+        # print()
+        #  print(total_volume, volume)
+        # assert total_volume == volume
+        # return 0
+
     result = 0
     for cub in cuboids:
         if cub.on:
@@ -296,3 +390,4 @@ def solve(x_range, y_range, z_range):
 
 
 print(solve((-50, 50), (-50, 50), (-50, 50)))
+# print(solve((min_x, max_x), (min_y, max_y), (min_z, max_z)))
