@@ -211,9 +211,10 @@ def solve(input_file):
         top_left = (x_range[0], y_range[1], z_range[1])
         bottom_right = (x_range[1], y_range[0], z_range[0])
         cuboids = [Cuboid(top_left, bottom_right)]
-        for com in commands:
+        for command in commands:
             incoming_cuboid = Cuboid(
-                (com.x[0], com.y[1], com.z[1]), (com.x[1], com.y[0], com.z[0])
+                (command.x[0], command.y[1], command.z[1]),
+                (command.x[1], command.y[0], command.z[0]),
             )
             cuboids_to_add = []
             cuboids_to_remove = []
@@ -221,15 +222,16 @@ def solve(input_file):
                 overlapp = find_overlapp(cub, incoming_cuboid)
                 if overlapp is not None:
                     if overlapp == cub:
-                        cub.on = com.on
-                    elif com.on != cub.on:
-                        overlapp.on = com.on
+                        cub.on = command.on
+                    elif command.on != cub.on:
+                        overlapp.on = command.on
                         cuboids_to_add.append(overlapp)
                         remaining = cut_out_sub_cuboid(cub, overlapp)
                         cuboids_to_add += remaining
                         cuboids_to_remove.append(cub)
             for r in cuboids_to_remove:
                 cuboids.remove(r)
+            cuboids -= cuboids_to_remove
             cuboids += cuboids_to_add
         result = 0
         for cub in cuboids:
