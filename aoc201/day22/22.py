@@ -390,4 +390,4 @@ def solve(x_range, y_range, z_range):
 
 
 print(solve((-50, 50), (-50, 50), (-50, 50)))
-# print(solve((min_x, max_x), (min_y, max_y), (min_z, max_z)))
+print(solve((min_x, max_x), (min_y, max_y), (min_z, max_z)))
